@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Listagem de Tasks</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background-color: #f3f3f3;
+    }
+
+    .container {
+      padding: 20px 40px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    input,
+    select,
+    button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .btn-warning {
+      background-color: #ffc107;
+      color: black;
+    }
+
+    .btn-edit {
+      cursor: pointer;
+      color: #17a2b8;
+      margin-right: 10px;
+    }
+
+    .btn-delete {
+      cursor: pointer;
+      color: #dc3545;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th,
+    td {
+      border: 1px solid #e0e0e0;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8f8f8;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <div class="card">
+      <h1>Listagem de Tasks</h1>
+      <a href="cadastro.html">➕ Nova Task</a>
+      <a href="calculoDias.html">Tarefas pendentes</a>
+    </div>
+
+    <div class="card">
+      <h2>Buscar Tasks</h2>
+      <input id="filtroId" placeholder="ID" type="number" />
+      <input id="filtroName" placeholder="Nome" />
+      <input id="filtroDescricao" placeholder="Descrição" />
+      <select id="filtroStatus">
+        <option value="">Status</option>
+        <option value="EmAndamento">Em Andamento</option>
+        <option value="Concluida">Concluída</option>
+        <option value="EmEspera">Em Espera</option>
+      </select>
+      <input id="filtroPrazo" type="date" />
+      <button class="btn-primary" onclick="filtrarTasks()">Pesquisar</button>
+      <button class="btn-warning" onclick="limparFiltros()">Limpar</button>
+    </div>
+
+    <div class="card">
+      <h2>Tasks Cadastradas</h2>
+      <button class="btn-warning" onclick="carregarTasks()">🔁 Atualizar Lista</button>
+      <table>
+        <thead>
+          <tr>
+            <th>Ações</th>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th>Status</th>
+            <th>Prazo</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaTasks"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    const API = "http://localhost:5248/api/tasks";
+    const statusMap = {
+      "EmEspera": "Em Espera",
+      "EmAndamento": "Em Andamento",
+      "Concluida": "Concluída"
+    };
+
+    function formatarDataBR(dataISO) {
+      if (!dataISO) return "";
+      const [ano, mes, dia] = dataISO.split("T")[0].split("-");
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    async function carregarTasks() {
+      const resposta = await fetch(API);
+      const tasks = await resposta.json();
+      mostrarTasks(tasks);
+    }
+
+    function mostrarTasks(tasks) {
+      const tabela = document.getElementById("tabelaTasks");
+      tabela.innerHTML = "";
+      tasks.forEach(task => {
+        const linha = document.createElement("tr");
+        linha.innerHTML = `
+      <td>
+        <span class="btn-edit" onclick="editarTask(${task.id})">✏️</span>
+        <span class="btn-delete" onclick="excluirTask(${task.id})">🗑️</span>
+      </td>
+      <td>${task.id}</td>
+      <td>${task.name}</td>
+      <td>${task.descricao}</td>
+      <td>${statusMap[task.status] || task.status}</td>
+      <td>${formatarDataBR(task.prazo)}</td>
+    `;
+        tabela.appendChild(linha);
+      });
+    }
+
+    function editarTask(id) {
+      fetch(`${API}/${id}`)
+        .then(res => res.json())
+        .then(task => {
+          const novoNome = prompt("Editar Nome:", task.name);
+          const novaDescricao = prompt("Editar Descrição:", task.descricao);
+          const novoStatus = prompt("Editar Status (EmEspera, EmAndamento, Concluida):", task.status);
+          const novoPrazo = prompt("Editar Prazo (yyyy-mm-dd):", task.prazo?.split('T')[0]);
+
+          if (novoNome && novaDescricao && novoStatus && novoPrazo) {
+            fetch(`${API}/${id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: novoNome,
+                descricao: novaDescricao,
+                status: novoStatus,
+                prazo: novoPrazo
+              })
+            }).then(carregarTasks);
+          }
+        });
+    }
+
+    async function excluirTask(id) {
+      if (confirm("Tem certeza que deseja excluir esta task?")) {
+        await fetch(`${API}/${id}`, { method: "DELETE" });
+        carregarTasks();
+      }
+    }
+
+    
+    <!-- ... (código anterior permanece o mesmo até a função filtrarTasks) -->
+
+    function filtrarTasks() {
+      const id = document.getElementById("filtroId").value;
+      const name = document.getElementById("filtroName").value.toLowerCase();
+      const descricao = document.getElementById("filtroDescricao").value.toLowerCase();
+      const status = document.getElementById("filtroStatus").value;
+      const prazo = document.getElementById("filtroPrazo").value;
+
+      fetch(API)
+        .then(res => res.json())
+        .then(tasks => {
+          const filtrados = tasks.filter(task =>
+            (id === "" || task.id == id) &&
+            (name === "" || task.name.toLowerCase().includes(name)) &&
+            (descricao === "" || task.descricao.toLowerCase().includes(descricao)) &&
+            (status === "" || task.status === status) &&
+            (prazo === "" || (task.prazo && task.prazo.split("T")[0] === prazo))
+          );
+          mostrarTasks(filtrados);
+        });
+    }
+
+    function limparFiltros() {
+      document.getElementById("filtroId").value = "";
+      document.getElementById("filtroName").value = "";
+      document.getElementById("filtroDescricao").value = "";
+      document.getElementById("filtroStatus").value = "";
+      document.getElementById("filtroPrazo").value = "";
+      carregarTasks();
+    }
+
+    // Carrega tasks ao abrir a página
+    carregarTasks();
+  </script>
+</body>
+
+</html>
+

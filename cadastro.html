@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastro de Task</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background-color: #f3f3f3;
+    }
+
+    .container {
+      padding: 20px 40px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    input,
+    select,
+    button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .btn-success {
+      background-color: #28a745;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Cadastro de Task</h1>
+      <input id="name" placeholder="Nome da Task" />
+      <input id="descricao" placeholder="Descrição" />
+      <select id="status">
+        <option value="">Selecione o status</option>
+        <option value="EmAndamento">Em Andamento</option>
+        <option value="Concluida">Concluída</option>
+        <option value="EmEspera">Em Espera</option>
+      </select>
+      <input id="prazo" type="date" placeholder="Prazo" />
+      <button class="btn-success" onclick="adicionarTask()">Salvar Task</button>
+    </div>
+    <div>
+      <a href="listagem.html">🔎 Ir para listagem</a>
+    </div>
+  </div>
+
+  <script>
+    const API = "http://localhost:5248/api/tasks";
+
+    async function adicionarTask() {
+      const name = document.getElementById("name").value;
+      const descricao = document.getElementById("descricao").value;
+      const status = document.getElementById("status").value;
+      const prazo = document.getElementById("prazo").value;
+
+      const task = {
+        name: name,
+        descricao: descricao,
+        status: status,
+        prazo: prazo
+      };
+
+      await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(task)
+      });
+
+      alert("Task cadastrada com sucesso!");
+      document.getElementById("name").value = "";
+      document.getElementById("descricao").value = "";
+      document.getElementById("status").value = "";
+      document.getElementById("prazo").value = "";
+    }
+  </script>
+</body>
+
+</html>
